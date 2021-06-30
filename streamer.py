@@ -58,10 +58,10 @@ def main():
         st.image(image,use_column_width=True)
 
     #---------------Twitter API Connection--------------------------------------
-    consumer_key = "bUzuiuXLR4ZegX4M0Oiwk9NWJ"
-    consumer_secret = "DE5QbQdJxC5tSU19uCxozmYAigO2YcrFnIGlGh3dTLZvQZoxwV"
-    access_token = "883742475227078657-LLFboxHcfgw74A0EtBVXsZvfmcRZw18"
-    access_token_secret = "NDUFBiyGU7Va6hD4ynIGI91R0ggMqI4qef9SuHPygNNrv"
+    consumer_key = "#########################"
+    consumer_secret = "#########################"
+    access_token = "#########################"
+    access_token_secret = "#########################"
 
     # auth = tweepy.OAuthHandler( consumer_key , consumer_secret )
     auth = tweepy.AppAuthHandler( consumer_key , consumer_secret )
