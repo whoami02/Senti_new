@@ -39,43 +39,43 @@ img {
 </style> """
 
 def main():
-    cola, colb, colc = st.beta_columns([8,15,10])
-    # colb, colc = st.beta_columns([15,10])
+    cola, colb, colc = st.beta_columns([7,15,10])
     with cola:
-        st.title("Brand Management & Social Listening")
+        # st.title("Brand Management & Social Listening")
+        # st.title("& Social Listening")
+        from PIL import Image
+        image = Image.open('Logo.png')
+        st.image(image,use_column_width=True)
+    with colb:
+        st.subheader("Enter a Brand/Product/Service which you want to check for")
+        Topic = str()
+        Count = int()
+        Topic = str(st.text_input("Enter the topic you are interested in"))
+        Count = int(st.number_input("Enter Number"))
     with colc:
         from PIL import Image
         image = Image.open('Header.jpeg')
         st.image(image,use_column_width=True)
 
-
-    # html_temp = """
-	# <div style="background-color:tomato; text-align:center;"><p style="color:white;font-size:40px;padding:9px">Live twitter Sentiment analysis</p></div>
-	# """
-    # st.markdown(html_temp, unsafe_allow_html=True)
-    # st.subheader("Select a topic which you'd like to get the sentiment analysis on :")
-
-    ################# Twitter API Connection #######################
+    #---------------Twitter API Connection--------------------------------------
     consumer_key = "bUzuiuXLR4ZegX4M0Oiwk9NWJ"
     consumer_secret = "DE5QbQdJxC5tSU19uCxozmYAigO2YcrFnIGlGh3dTLZvQZoxwV"
     access_token = "883742475227078657-LLFboxHcfgw74A0EtBVXsZvfmcRZw18"
     access_token_secret = "NDUFBiyGU7Va6hD4ynIGI91R0ggMqI4qef9SuHPygNNrv"
 
-    # Use the above credentials to authenticate the API.
-
     # auth = tweepy.OAuthHandler( consumer_key , consumer_secret )
     auth = tweepy.AppAuthHandler( consumer_key , consumer_secret )
     # auth.set_access_token( access_token , access_token_secret )
     api = tweepy.API(auth)
-    ################################################################
+    # --------------------------------------------------------------------------
 
     df = pd.DataFrame(columns=["Date","User","IsVerified","Tweet","Likes","RT",'User_location'])
 
 
-    # Write a Function to extract tweets:
+    # Function to extract tweets:
     def get_tweets(Topic,Count):
         i=0
-        #my_bar = st.progress(100) # To track progress of Extracted tweets
+        my_bar = st.progress(100) # To track progress of Extracted tweets
         for tweet in tweepy.Cursor(api.search, q=Topic,count=400, lang="en",exclude='retweets').items():
             #time.sleep(0.1)
             #my_bar.progress(i)
@@ -86,8 +86,6 @@ def main():
             df.loc[i,"Likes"] = tweet.favorite_count
             df.loc[i,"RT"] = tweet.retweet_count
             df.loc[i,"User_location"] = tweet.user.location
-            #df.to_csv("TweetDataset.csv",index=False)
-            #df.to_excel('{}.xlsx'.format("TweetDataset"),index=False)   ## Save as Excel
 
             i=i+1
             if i>Count:
@@ -120,25 +118,11 @@ def main():
         text_new = " ".join([txt for txt in Topic_text.split() if txt not in stopwords])
         return text_new
 
-
-
-    with colb:
-        # Collect Input from user :
-        st.subheader("Enter a Brand/Product/Service which you want to check for")
-        Topic = str()
-        Topic = str(st.text_input("Enter the topic you are interested in (Press Enter once done)"))
-        # .........NEW...........
-        # Count = str()
-        Count = int(st.number_input("Enter Number"))
-
     if len(Topic) > 0 :
 
         # Call the function to extract the data. pass the topic and filename you want the data to be stored in.
         with st.spinner("Please wait, Tweets are being extracted"):
-            # get_tweets(Topic , Count=1000)
             get_tweets(Topic, Count)
-
-
 
         # Call function to get Clean tweets
         df['clean_tweet'] = df['Tweet'].apply(lambda x : clean_tweet(x))
@@ -147,16 +131,53 @@ def main():
         df["Sentiment"] = df["Tweet"].apply(lambda x : analyze_sentiment(x))
         df["Polarity"] = df["Tweet"].apply(lambda x : TextBlob(x).sentiment.polarity)
 
-        col1, col2 = st.beta_columns([2,1])
+        col1, col2 = st.beta_columns([1,2])
 
         with col1:
             st.success('Tweets have been Extracted !!!!')
+            # Write Summary of the Tweets
+            st.subheader("Summary of the Data")
+            st.write("Total Tweets Extracted for Topic '{}' are : {}".format(Topic,len(df.Tweet)))
+            st.write("Total Positive Tweets are : {}".format(len(df[df["Sentiment"]=="Positive"])))
+            st.write("Total Negative Tweets are : {}".format(len(df[df["Sentiment"]=="Negative"])))
+            st.write("Total Neutral Tweets are : {}".format(len(df[df["Sentiment"]=="Neutral"])))
 
-            # See the Extracted Data :
-            # if st.button("See the Extracted Data"):
-                #st.markdown(html_temp, unsafe_allow_html=True)
-            st.header("Below is the Extracted Data :")
+        with col2:
+            st.success("Below is the Extracted Data :")
             st.write(df.head(50))
+
+        colA, colB = st.beta_columns(2)
+
+        with colA:
+
+            # st.write(sns.jointplot(x=df['Retweets'], y=df['Likes'], data=df, kind='scatter'))
+            # st.pyplot()
+            # get the countPlot
+            st.header("Count Plot for Different Sentiments")
+            fig_dims = (20,7)
+            fig, ax = plt.subplots(figsize=fig_dims)
+            st.write(sns.countplot(df["Sentiment"]))
+            st.pyplot()
+
+            # Polarity plot
+            st.header("Polarity Plot")
+            st.write(sns.distplot(df['Polarity'], bins=20))
+            st.pyplot()
+
+            # TIME-Series
+            st.header("Time-Series Analysis of Likes & Retweets")
+            time_liked = pd.Series(data = df['Likes'].values, index=df['Date'])
+            time_liked.plot(figsize=fig_dims, label='Likes', legend=True)
+            time_RT = pd.Series(data = df['RT'].values, index = df['Date'])
+            time_RT.plot(figsize=fig_dims, label='Retweets', legend=True)
+            st.pyplot()
+
+            # get the countPlot Based on Verified and unverified Users
+            st.header("Count Plot for Different Sentiments for Verified and unverified Users")
+            st.write(sns.countplot(df["Sentiment"],hue=df.IsVerified))
+            st.pyplot()
+
+        with colB:
 
             # Most Liked
             st.header("Most Popular Opinion")
@@ -172,31 +193,6 @@ def main():
                fill_color='lightcyan', font_color='black', font_size=12, height=30)
             )])
             st.write(fig1)
-            # st.write(df1.head(10))
-
-            # TIME-Series
-            st.header("Time-Series Analysis of Likes & Retweets")
-            time_liked = pd.Series(data = df['Likes'].values, index=df['Date'])
-            time_liked.plot(figsize=(20,7), label='Likes', legend=True)
-            time_RT = pd.Series(data = df['RT'].values, index = df['Date'])
-            time_RT.plot(figsize=(20,7), label='Retweets', legend=True)
-            st.pyplot()
-
-            # st.write(sns.jointplot(x=df['Retweets'], y=df['Likes'], data=df, kind='scatter'))
-            # st.pyplot()
-            # get the countPlot
-            st.header("Count Plot for Different Sentiments")
-            st.write(sns.countplot(df["Sentiment"]))
-            st.pyplot()
-
-
-        with col2:
-            # Write Summary of the Tweets
-            st.subheader("Summary of the Data")
-            st.write("Total Tweets Extracted for Topic '{}' are : {}".format(Topic,len(df.Tweet)))
-            st.write("Total Positive Tweets are : {}".format(len(df[df["Sentiment"]=="Positive"])))
-            st.write("Total Negative Tweets are : {}".format(len(df[df["Sentiment"]=="Negative"])))
-            st.write("Total Neutral Tweets are : {}".format(len(df[df["Sentiment"]=="Neutral"])))
 
             # Piechart
             # if st.button("Get Pie Chart for Different Sentiments"):
@@ -209,17 +205,6 @@ def main():
             colors = ['#00FF00','#FF0000','#0000FF']
             st.write(plt.pie(d,shadow=True,explode=explode,labels=["Positive","Negative","Neutral"], colors=colors,autopct='%1.1f%%', startangle=90))
             st.pyplot()
-
-            # Polarity plot
-            st.header("Polarity Plot")
-            st.write(sns.distplot(df['Polarity'], bins=30))
-            st.pyplot()
-
-            # get the countPlot Based on Verified and unverified Users
-            st.header("Count Plot for Different Sentiments for Verified and unverified Users")
-            st.write(sns.countplot(df["Sentiment"],hue=df.IsVerified))
-            st.pyplot()
-
 
         col11, col12, col13 = st.beta_columns(3)
         with col11:
@@ -261,16 +246,8 @@ def main():
 
 
     st.sidebar.header("Brand Management and Social Listening")
-    st.sidebar.info("dafjennvl ")
-    st.sidebar.text("Built with Streamlit")
-
-    #st.sidebar.subheader("Scatter-plot setup")
-    #box1 = st.sidebar.selectbox(label= "X axis", options = numeric_columns)
-    #box2 = st.sidebar.selectbox(label="Y axis", options=numeric_columns)
-    #sns.jointplot(x=box1, y= box2, data=df, kind = "reg", color= "red")
-    #st.pyplot()
-
-
+    st.sidebar.info("This is a Social Listening Tool which extracts data from public sources like Twitter and performs computational linguistics on the collected data, while projecting several inferences which can be beneficial for the user to gauge the public response of the given topic. This tool can be put in use extensively to predict the possibility for success of a product/service in a market. ")
+    st.sidebar.text("Team SentiMint")
 
     if st.button("Exit"):
         st.balloons()
